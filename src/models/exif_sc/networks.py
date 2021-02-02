@@ -1,4 +1,4 @@
-"""EXIF-SC model
+"""EXIF-SC network model
 
 From:
 - Fighting Fake News: Image Splice Detection via Learned Self-Consistency (Huh et al., ECCV 2018)
@@ -28,8 +28,8 @@ def load_weights(weight_file):
     return weights_dict
 
 
-class EXIF_SC(nn.Module):
-    def __init__(self, weight_file):
+class EXIF_Net(nn.Module):
+    def __init__(self, weight_file: str):
         super().__init__()
         global _weights_dict
         _weights_dict = load_weights(weight_file)
@@ -52,6 +52,9 @@ class EXIF_SC(nn.Module):
         self.__set_fc_params(self.classifier_fc[1], "classify/fc_out")
 
         # ResNet backbone
+        self._init_backbone()
+
+    def _init_backbone(self):
         self.resnet_v2_50_conv1_Conv2D = self.__conv(
             2,
             name="resnet_v2_50/conv1",
@@ -1889,24 +1892,24 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    model = EXIF_SC(args.weights_path)
-    model.eval()
+    net = EXIF_Net(args.weights_path)
+    net.eval()
 
     batch_size = 5
     image_size = (3, 32, 32)
 
     # Get image features
-    output = model(torch.randn(batch_size, *image_size))
+    output = net(torch.randn(batch_size, *image_size))
     assert output.shape == torch.Size([batch_size, 4096])
 
     # Get EXIF attribute predictions
-    output = model.predict_exif(
+    output = net.predict_exif(
         torch.randn(batch_size, *image_size), torch.randn(batch_size, *image_size)
     )
     assert output.shape == torch.Size([batch_size, 83])
 
     # Get predictions
-    output = model.predict(
+    output = net.predict(
         torch.randn(batch_size, *image_size), torch.randn(batch_size, *image_size)
     )
     assert output.shape == torch.Size([batch_size, 1])
