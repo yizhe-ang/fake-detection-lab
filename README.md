@@ -22,3 +22,9 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 
 ### Adversarial Machine Learning
 - Adversarial Attack on Deep Learning-Based Splice Localization ([Rozsa et al., 2020](https://arxiv.org/abs/2004.08443))
+
+# Datasets
+- [Columbia Image Splicing Detection Evaluation Dataset](https://www.ee.columbia.edu/ln/dvmm/downloads/authsplcuncmp/)
+- [Realistic Tampering Dataset](http://pkorus.pl/downloads/dataset-realistic-tampering)
+- [In-the-Wild Dataset](https://minyoungg.github.io/selfconsistency/)
+- [Scene Completion Using Millions of Photographs - Dataset](http://graphics.cs.cmu.edu/projects/scene-completion/)

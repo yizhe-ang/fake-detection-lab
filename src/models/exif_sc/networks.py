@@ -35,21 +35,29 @@ class EXIF_Net(nn.Module):
         _weights_dict = load_weights(weight_file)
 
         # EXIF prediction network
+        # FIXME Double-check configuration of non-linearities
         self.exif_fc = nn.Sequential(
             nn.Linear(8192, 4096),
+            nn.ReLU(),
             nn.Linear(4096, 2048),
+            nn.ReLU(),
             nn.Linear(2048, 1024),
+            nn.ReLU(),
             nn.Linear(1024, 83),
         )
         self.__set_fc_params(self.exif_fc[0], "predict/fc/fc_1")
-        self.__set_fc_params(self.exif_fc[1], "predict/fc/fc_2")
-        self.__set_fc_params(self.exif_fc[2], "predict/fc/fc_3")
-        self.__set_fc_params(self.exif_fc[3], "predict/fc_out")
+        self.__set_fc_params(self.exif_fc[2], "predict/fc/fc_2")
+        self.__set_fc_params(self.exif_fc[4], "predict/fc/fc_3")
+        self.__set_fc_params(self.exif_fc[6], "predict/fc_out")
 
         # Classification network
-        self.classifier_fc = nn.Sequential(nn.Linear(83, 512), nn.Linear(512, 1))
+        self.classifier_fc = nn.Sequential(
+            nn.Linear(83, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
         self.__set_fc_params(self.classifier_fc[0], "classify/fc/fc_1")
-        self.__set_fc_params(self.classifier_fc[1], "classify/fc_out")
+        self.__set_fc_params(self.classifier_fc[2], "classify/fc_out")
 
         # ResNet backbone
         self._init_backbone()
@@ -1809,8 +1817,8 @@ class EXIF_Net(nn.Module):
         logits = self.exif_fc(feat)
 
         # FIXME Sigmoid or nay?
-        # return logits
-        return torch.sigmoid(logits)  # [B, 83]
+        return logits
+        # return torch.sigmoid(logits)  # [B, 83]
 
     def predict(self, x1, x2):
         exif_preds = self.predict_exif(x1, x2)

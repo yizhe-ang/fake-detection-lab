@@ -18,6 +18,9 @@ import torch
 # FIXME Careful of image shape, i.e. [C, H, W] vs [H, W, C]
 # FIXME `no_grad` when running network
 # FIXME Normalize image!
+
+# FIXME Something wrong with network!!
+# FIXME Something wrong with image preprocessing?!!
 from .networks import EXIF_Net
 from .postprocess import mean_shift, normalized_cut
 
@@ -37,8 +40,7 @@ class EXIF_SC:
     def __init__(
         self, weight_file: str, patch_size=128, num_per_dim=30, device="cuda:0"
     ) -> None:
-        """[summary]
-
+        """
         Parameters
         ----------
         weight_file : str
@@ -61,8 +63,7 @@ class EXIF_SC:
         img: torch.Tensor,
         feat_batch_size=32,
         pred_batch_size=64,
-        use_ncuts=False,
-        blue_high=False,
+        blue_high=True,
     ):
         _, height, width = img.shape
         # Batch size of patches to be fed into the network
@@ -72,7 +73,7 @@ class EXIF_SC:
 
         self._init_img(img)
 
-        # Precompute features for each patch,
+        # Precompute features for each patch
         patch_features = self._get_patch_features(batch_size=feat_batch_size)
 
         # Predict consistency maps
@@ -107,10 +108,8 @@ class EXIF_SC:
 
         out_ms = cv2.resize(ms, (width, height), interpolation=cv2.INTER_LINEAR)
 
-        if use_ncuts:
-            return out_ms, out_ncuts
-
-        return out_ms
+        # Use out_ms or out_ncuts for prediction score?
+        return out_ms, out_ncuts
 
     def _predict_consistency_maps(self, patch_features, batch_size=64):
         # For each patch, how many overlapping patches?
@@ -226,8 +225,12 @@ class EXIF_SC:
         torch.Tensor
             [3, patch_size, patch_size]
         """
+        # FIXME This is wrong
+        h_coord = h_idx * self.stride
+        w_coord = w_idx * self.stride
+
         return self.img[
-            :, h_idx : h_idx + self.patch_size, w_idx : w_idx + self.patch_size
+            :, h_coord : h_coord + self.patch_size, w_coord : w_coord + self.patch_size
         ]
 
     def _get_patches(self, idxs: torch.Tensor) -> torch.Tensor:
@@ -251,6 +254,7 @@ class EXIF_SC:
         # FIXME Any way to vectorize this?
         for i, idx in enumerate(idxs):
             h_idx, w_idx = idx
+
             patches[i] = self._get_patch(h_idx, w_idx)
 
         return patches
