@@ -2,4 +2,5 @@ opencv-python
 scipy
 scikit-learn
 matplotlib
+tqdm
 jupyter

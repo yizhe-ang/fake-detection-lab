@@ -9,31 +9,21 @@ Network building file adapted from:
 - https://github.com/Microsoft/MMdnn/blob/master/docs/tf2pytorch.md
 """
 from math import floor
+from typing import Any, Dict
 
 import cv2
 import numpy as np
 import torch
-
-# TODO Check out PyTorch multiprocessing
-# FIXME Careful of image shape, i.e. [C, H, W] vs [H, W, C]
-# FIXME `no_grad` when running network
-# FIXME Normalize image!
 
 # FIXME Something wrong with network!!
 # FIXME Something wrong with image preprocessing?!!
 from .networks import EXIF_Net
 from .postprocess import mean_shift, normalized_cut
 
-
-def preprocess_img(img: torch.Tensor) -> torch.Tensor:
-    """ Normalizes images into the range [-1.0, 1.0] """
-    if img.max() <= 1:
-        # PNG format
-        img = (2.0 * img) - 1.0
-    else:
-        # JPEG format
-        img = 2.0 * (img / 255.0) - 1.0
-    return img
+# TODO Check out PyTorch multiprocessing
+# FIXME Careful of image shape, i.e. [C, H, W] vs [H, W, C]
+# FIXME `no_grad` when running network
+# FIXME Normalize image!
 
 
 class EXIF_SC:
@@ -49,6 +39,8 @@ class EXIF_SC:
             Size of patches, by default 128
         num_per_dim : int, optional
             Number of patches to use along the largest dimension, by default 30
+        device : str, optional
+            , by default "cuda:0"
         """
         self.patch_size = patch_size
         self.num_per_dim = num_per_dim
@@ -61,16 +53,38 @@ class EXIF_SC:
     def predict(
         self,
         img: torch.Tensor,
-        feat_batch_size=32,
-        pred_batch_size=64,
+        feat_batch_size=32,  # Does not affect compute time much?
+        pred_batch_size=1024,  # Affects up to a certain extent
         blue_high=True,
-    ):
+    ) -> Dict[str, Any]:
+        """
+        Parameters
+        ----------
+        img : torch.Tensor
+            [C, H, W], range: [0, 255]
+        feat_batch_size : int, optional
+            , by default 32
+        pred_batch_size : int, optional
+            , by default 1024
+        blue_high : bool
+            , by default True
+
+        Returns
+        -------
+        Dict[str, Any]
+            ms : np.ndarray (float32)
+                Consistency map, [H, W], range [0, 1]
+            ncuts : np.ndarray (float32)
+                Localization map, [H, W], range [0, 1]
+            score : float
+                Prediction score, higher indicates existence of manipulation
+        """
         _, height, width = img.shape
-        # Batch size of patches to be fed into the network
         assert (
             min(height, width) > self.patch_size
         ), "Image must be bigger than patch size!"
 
+        # Initialize image and attributes
         self._init_img(img)
 
         # Precompute features for each patch
@@ -94,22 +108,21 @@ class EXIF_SC:
                 ms = 1 - ms
 
         # Run clustering to get localization map
-        if use_ncuts:
-            ncuts = normalized_cut(pred_maps)
-            if np.mean(ncuts > 0.5) > 0.5:
-                # majority of the image is white
-                # flip so spliced is white
-                ncuts = 1 - ncuts
-            out_ncuts = cv2.resize(
-                ncuts.astype(np.float32),
-                (width, height),
-                interpolation=cv2.INTER_LINEAR,
-            )
+        ncuts = normalized_cut(pred_maps)
+        if np.mean(ncuts > 0.5) > 0.5:
+            # majority of the image is white
+            # flip so spliced is white
+            ncuts = 1 - ncuts
+        out_ncuts = cv2.resize(
+            ncuts.astype(np.float32),
+            (width, height),
+            interpolation=cv2.INTER_LINEAR,
+        )
 
         out_ms = cv2.resize(ms, (width, height), interpolation=cv2.INTER_LINEAR)
 
-        # Use out_ms or out_ncuts for prediction score?
-        return out_ms, out_ncuts
+        # FIXME Use out_ms or out_ncuts for prediction score?
+        return {"ms": out_ms, "ncuts": out_ncuts, "score": out_ms.mean()}
 
     def _predict_consistency_maps(self, patch_features, batch_size=64):
         # For each patch, how many overlapping patches?
@@ -196,7 +209,7 @@ class EXIF_SC:
         img : torch.Tensor
         """
         # Preprocess and set img attribute
-        self.img = preprocess_img(img.to(self.device))
+        self.img = self.preprocess_img(img.to(self.device))
         _, height, width = img.shape
 
         # Compute patch stride on image
@@ -205,12 +218,6 @@ class EXIF_SC:
         # Compute total number of patches along height and width dimension
         self.max_h_idx = 1 + floor((height - self.patch_size) / self.stride)
         self.max_w_idx = 1 + floor((width - self.patch_size) / self.stride)
-
-        # Initialize indices / coords of all patches, [n_patches, 2]
-        # FIXME Don't have to keep as attribute? Just init within the generator
-        h_idxs = torch.arange(self.max_h_idx)
-        w_idxs = torch.arange(self.max_w_idx)
-        self.idxs = torch.stack(torch.meshgrid([h_idxs, w_idxs])).view(2, -1).T
 
     def _get_patch(self, h_idx: int, w_idx: int) -> torch.Tensor:
         """Get a patch from the image
@@ -225,7 +232,6 @@ class EXIF_SC:
         torch.Tensor
             [3, patch_size, patch_size]
         """
-        # FIXME This is wrong
         h_coord = h_idx * self.stride
         w_coord = w_idx * self.stride
 
@@ -252,6 +258,7 @@ class EXIF_SC:
         )
 
         # FIXME Any way to vectorize this?
+        # https://discuss.pytorch.org/t/advanced-fancy-indexing-across-batches/103445
         for i, idx in enumerate(idxs):
             h_idx, w_idx = idx
 
@@ -273,17 +280,24 @@ class EXIF_SC:
             [batch_size, 3, patch_size, patch_size]
         """
         count = 0
-        n_patches = len(self.idxs)
+
+        # Initialize indices / coords of all patches, [n_patches, 2]
+        h_idxs = torch.arange(self.max_h_idx)
+        w_idxs = torch.arange(self.max_w_idx)
+        idxs = torch.stack(torch.meshgrid([h_idxs, w_idxs])).view(2, -1).T
+
+        n_patches = len(idxs)
 
         while True:
             # Break when run out of patches
-            if count * batch_size > n_patches:
+            if count * batch_size >= n_patches:
                 break
 
             # Yield a batch of patches
-            yield self._get_patches(
-                self.idxs[count * batch_size : (count + 1) * batch_size]
+            patches = self._get_patches(
+                idxs[count * batch_size : (count + 1) * batch_size]
             )
+            yield patches
             count += 1
 
     def _pred_idxs_gen(self, batch_size=32) -> torch.Tensor:
@@ -323,7 +337,7 @@ class EXIF_SC:
 
         count = 0
         while True:
-            if count * batch_size > len(idxs):
+            if count * batch_size >= len(idxs):
                 break
 
             yield idxs[count * batch_size : (count + 1) * batch_size]
@@ -350,7 +364,11 @@ class EXIF_SC:
         # Generator for patches; raster scan order
         with torch.no_grad():
             for patches in self._patches_gen(batch_size):
-                patch_features.append(self.net(patches))
+                feat = self.net(patches)
+                # If missing batch dimension
+                if len(feat.shape) == 1:
+                    feat = feat.view(1, -1)
+                patch_features.append(feat)
 
         # [n_patches, n_features]
         patch_features = torch.cat(patch_features, dim=0)
@@ -369,6 +387,17 @@ class EXIF_SC:
         # )
 
         return patch_features
+
+    @staticmethod
+    def preprocess_img(img: torch.Tensor) -> torch.Tensor:
+        """ Normalizes images into the range [-1.0, 1.0] """
+        if img.max() <= 1:
+            # PNG format
+            img = (2.0 * img) - 1.0
+        else:
+            # JPEG format
+            img = 2.0 * (img / 255.0) - 1.0
+        return img
 
 
 if __name__ == "__main__":

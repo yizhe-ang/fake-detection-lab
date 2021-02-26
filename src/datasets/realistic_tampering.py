@@ -14,7 +14,7 @@ from torch.utils.data import Dataset
 
 
 class RealisticTamperingDataset(Dataset):
-    def __init__(self, root_dir: str = "data/realistic_tampering") -> None:
+    def __init__(self, root_dir="data/realistic_tampering") -> None:
         self.to_label = {"pristine": 0, "tampered-realistic": 1}
         root_dir = Path(root_dir)
 
@@ -32,7 +32,7 @@ class RealisticTamperingDataset(Dataset):
 
         assert (
             len(self.img_paths) == 440
-        ), "Lesser than expected number of images in dataset!"
+        ), "Incorrect expected number of images in dataset!"
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """
@@ -40,11 +40,11 @@ class RealisticTamperingDataset(Dataset):
         -------
         Dict[str, Any]
             img : torch.ByteTensor
-                [C, H, W], range: [0, 255]
+                [C, H, W], range [0, 255]
             label : int
                 One of {0, 1}
             map : np.ndarray (uint8)
-                [H, W], values one of {0, 255}
+                [H, W], values one of {0, 1}
         """
         img_path = self.img_paths[idx]
 
@@ -71,14 +71,13 @@ class RealisticTamperingDataset(Dataset):
             ), "Ground-truth should be bounded between [0, 255]!"
 
             # Turn all greys into black
-            map[map > 0] = 255
+            map[map > 0] = 1
 
         # If clean image
         else:
             _, height, width = img.shape
             map = np.zeros((height, width), dtype=np.uint8)
 
-        # FIXME Should `map` be values of {0, 1} instead?
         return {"img": img, "label": label, "map": map}
 
     def __len__(self):

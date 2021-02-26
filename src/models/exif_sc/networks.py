@@ -52,9 +52,7 @@ class EXIF_Net(nn.Module):
 
         # Classification network
         self.classifier_fc = nn.Sequential(
-            nn.Linear(83, 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
+            nn.Linear(83, 512), nn.ReLU(), nn.Linear(512, 1)
         )
         self.__set_fc_params(self.classifier_fc[0], "classify/fc/fc_1")
         self.__set_fc_params(self.classifier_fc[2], "classify/fc_out")
@@ -1043,7 +1041,19 @@ class EXIF_Net(nn.Module):
             bias=True,
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through ResNet feature extractor
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            [B, C, H, W]
+
+        Returns
+        -------
+        torch.Tensor
+            [B, 4096]
+        """
         resnet_v2_50_Pad = F.pad(x, (3, 3, 3, 3), mode="constant", value=0)
         resnet_v2_50_conv1_Conv2D = self.resnet_v2_50_conv1_Conv2D(resnet_v2_50_Pad)
         resnet_v2_50_pool1_MaxPool_pad = F.pad(
