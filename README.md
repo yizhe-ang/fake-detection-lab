@@ -2,8 +2,11 @@
 Media Forensics / Fake Image Detection experiments in PyTorch.
 
 # Installation
-1. Install Python 3.7 and [PyTorch](https://pytorch.org/).
-2. ```pip install -r requirements.txt```
+We use `conda` for managing Python and CUDA versions, and `pip-tools` for managing Python package dependencies.
+1. Specify the appropriate `cudatoolkit` and `cudnn` versions to install on your machine in the `environment.yml` file.
+2. To create the `conda` environment, run: `conda env create`
+3. Activate the environment: `conda activate fake-detection-lab`
+4. Install all necessary packages: `pip-sync requirements/prod.txt`
 
 # Model Artifacts
 All model artifacts can be accessed and downloaded [here](https://drive.google.com/drive/folders/1Qm1WUUithm0dE1qnJXGfoCbMG37jq3mW?usp=sharing).
