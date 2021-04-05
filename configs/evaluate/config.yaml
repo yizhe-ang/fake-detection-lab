@@ -1,12 +1,18 @@
+name: dso1_2
 model: models.EXIF_SC
 model_args:
   weight_file: artifacts/exif_sc.npy
-  device: cuda:0
+  device: cuda:1
 
-dataset: datasets.InTheWildDataset
+dataset: datasets.DSO_1_Dataset
 dataset_args:
+  spliced_only: True
 
 save: True
-# resize: [1152, 768]  # For Columbia
+# resize: [768, 1152]  # For Columbia
 # resize: [600, 700]  # For Hays
-resize: [1000, 1400]  # For In-The-Wild
+# resize: [1000, 1400]  # For In-The-Wild
+resize: [1600, 1900]  # For DSO-1
+
+adv_step_size: 10000
+adv_n_iter: 50

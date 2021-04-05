@@ -28,3 +28,4 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 - [Realistic Tampering Dataset](http://pkorus.pl/downloads/dataset-realistic-tampering)
 - [In-the-Wild Dataset](https://minyoungg.github.io/selfconsistency/)
 - [Scene Completion Using Millions of Photographs - Dataset](http://graphics.cs.cmu.edu/projects/scene-completion/)
+- [DSO-1 Dataset](https://recodbr.wordpress.com/code-n-data/#dso1_dsi1)

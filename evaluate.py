@@ -1,20 +1,33 @@
 import argparse
 
-from src.evaluators import Evaluator
+from src.evaluation import Evaluator
 from src.utils import ConfigManager, load_yaml
+
+import wandb
 
 
 def main(config):
+    wandb.init(project="exif-sc-attack", config=config, name=config["name"])
+
     config_manager = ConfigManager(config)
 
     model = config_manager.init_object("model")
     dataset = config_manager.init_object("dataset")
 
-    evaluator = Evaluator(model, dataset)
-    metrics = evaluator.evaluate(config["save"], tuple(config["resize"]))
+    evaluator = Evaluator(
+        model, dataset, config["adv_step_size"], config["adv_n_iter"], logger=wandb
+    )
+    results = evaluator(config["save"], tuple(config["resize"]))
 
-    for name, score in metrics.items():
-        print(f"{name}: {score}")
+    print(results)
+
+    # Flatten nested dict
+    log_results = {}
+    for type, r in results.items():
+        for metric, value in r.items():
+            log_results[f"{type}/{metric}"] = value
+
+    wandb.log(log_results)
 
 
 if __name__ == "__main__":

@@ -60,6 +60,19 @@ class EXIF_Net(nn.Module):
         # ResNet backbone
         self._init_backbone()
 
+    @staticmethod
+    def preprocess_img(img: torch.Tensor) -> torch.Tensor:
+        """Normalizes images into the range [-1.0, 1.0]"""
+        # if img.max() <= 1:
+        #     # PNG format
+        #     img = (2.0 * img) - 1.0
+        # else:
+
+        # JPEG format
+        img = 2.0 * (img / 255.0) - 1.0
+
+        return img
+
     def _init_backbone(self):
         self.resnet_v2_50_conv1_Conv2D = self.__conv(
             2,
@@ -1047,13 +1060,15 @@ class EXIF_Net(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            [B, C, H, W]
+            [B, C, H, W], range [0, 255]
 
         Returns
         -------
         torch.Tensor
             [B, 4096]
         """
+        x = self.preprocess_img(x)
+
         resnet_v2_50_Pad = F.pad(x, (3, 3, 3, 3), mode="constant", value=0)
         resnet_v2_50_conv1_Conv2D = self.resnet_v2_50_conv1_Conv2D(resnet_v2_50_Pad)
         resnet_v2_50_pool1_MaxPool_pad = F.pad(

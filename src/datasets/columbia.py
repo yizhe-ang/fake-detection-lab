@@ -13,7 +13,8 @@ from torch.utils.data import Dataset
 
 
 class ColumbiaDataset(Dataset):
-    def __init__(self, root_dir="data/columbia") -> None:
+    def __init__(self, root_dir="data/columbia", spliced_only=False) -> None:
+
         self.to_label = {"4cam_auth": 0, "4cam_splc": 1}
         root_dir = Path(root_dir)
 
@@ -21,11 +22,14 @@ class ColumbiaDataset(Dataset):
         self.img_paths = []
 
         # Grab authentic images
-        auth_dir = root_dir / "4cam_auth"
-        auth_paths = list(auth_dir.glob("*.tif"))
-        assert (
-            len(auth_paths) == 183
-        ), "Incorrect expected number of authentic images in dataset!"
+        if not spliced_only:
+            auth_dir = root_dir / "4cam_auth"
+            auth_paths = list(auth_dir.glob("*.tif"))
+            assert (
+                len(auth_paths) == 183
+            ), "Incorrect expected number of authentic images in dataset!"
+
+            self.img_paths.extend(auth_paths)
 
         # Grab spliced images
         splc_dir = root_dir / "4cam_splc"
@@ -34,7 +38,6 @@ class ColumbiaDataset(Dataset):
             len(splc_paths) == 180
         ), "Incorrect expected number of spliced images in dataset!"
 
-        self.img_paths.extend(auth_paths)
         self.img_paths.extend(splc_paths)
 
     def __getitem__(self, idx) -> Dict[str, Any]:
