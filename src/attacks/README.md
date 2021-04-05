@@ -16,8 +16,10 @@ For the details of the attack, a step size of 10000 was used, with 50 iterations
 
 ## Columbia Dataset
 ![](/assets/lots_examples/columbia_1.png)
+
 ![](/assets/lots_examples/columbia_2.png)
 
 ## DSO-1 Dataset
 ![](/assets/lots_examples/dso1_1.png)
+
 ![](/assets/lots_examples/dso1_2.png)
