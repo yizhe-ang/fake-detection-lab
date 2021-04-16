@@ -14,12 +14,11 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 
 # Project Structure
 ```
-├── ...
+├── artifacts
+│   └── exif_sc.npy     <-- Store model weights here
 ├── assets
 ├── configs             <-- Configuration files for scripts
 ├── data                <-- To store downloaded data
-├── environment.yml
-├── evaluate.py         <-- Main entry point for evaluation
 ├── notebooks
 ├── requirements
 ├── src
@@ -29,10 +28,15 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 │   ├── models          <-- Implementation of detection models
 │   ├── structures.py
 │   └── utils.py
-├── test.py
-└── train.py
+├── evaluate.py         <-- Main entry point for evaluation
+└── ...
 ```
 
+# Usage
+```
+python evaluate.py --config configs/evaluate/config.yaml
+```
+The above command runs the evaluation on a clean dataset, and also on the dataset after it has been adversarially perturbed, based on the settings specified in the configuration file.
 
 # Resources
 ### Model Conversion

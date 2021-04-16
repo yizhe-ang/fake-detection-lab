@@ -21,6 +21,7 @@ class Evaluator:
         dataset: Dataset,
         adv_step_size: int,
         adv_n_iter: int,
+        vis_dir: str = None,
         vis_every=1,
         logger=None,
     ) -> None:
@@ -33,6 +34,8 @@ class Evaluator:
         self.dataset = dataset
         self.adv_step_size = adv_step_size
         self.adv_n_iter = adv_n_iter
+
+        self.vis_dir = vis_dir
         self.vis_every = vis_every
         self.logger = logger
 
@@ -114,7 +117,7 @@ class Evaluator:
                     m.update(data["map"], img_pred[type]["ms"])
 
             # Visualize some examples
-            if i % self.vis_every == 0:
+            if self.vis_dir and i % self.vis_every == 0:
                 self._vis_preds(i, data, img_pred, clean_img, adv_img)
 
             # If image sizes different, resize to a consistent shape
@@ -336,7 +339,8 @@ class Evaluator:
         plt.tight_layout()
         plt.show()
 
-        plt.savefig(f"assets/vis/{self.dataset.__class__.__name__}_{i}.png")
+        vis_dir = Path(self.vis_dir)
+        plt.savefig(vis_dir / f"{self.dataset.__class__.__name__}_{i}.png")
 
         if self.logger:
             self.logger.log({"adv_example": self.logger.Image(plt)})
