@@ -13,6 +13,25 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 - `exif_sc.npy`: EXIF-SC model weights
 
 # Project Structure
+```
+├── ...
+├── assets
+├── configs             <-- Configuration files for scripts
+├── data                <-- To store downloaded data
+├── environment.yml
+├── evaluate.py         <-- Main entry point for evaluation
+├── notebooks
+├── requirements
+├── src
+│   ├── attacks         <-- Implementation of adversarial attacks
+│   ├── datasets        <-- Data loading classes
+│   ├── evaluation      <-- Evaluation classes and utilities
+│   ├── models          <-- Implementation of detection models
+│   ├── structures.py
+│   └── utils.py
+├── test.py
+└── train.py
+```
 
 
 # Resources
