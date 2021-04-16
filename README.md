@@ -12,6 +12,9 @@ We use `conda` for managing Python and CUDA versions, and `pip-tools` for managi
 All model artifacts can be accessed and downloaded [here](https://drive.google.com/drive/folders/1Qm1WUUithm0dE1qnJXGfoCbMG37jq3mW?usp=sharing).
 - `exif_sc.npy`: EXIF-SC model weights
 
+# Project Structure
+
+
 # Resources
 ### Model Conversion
 - Microsoft's [MMdnn](https://github.com/microsoft/MMdnn)
