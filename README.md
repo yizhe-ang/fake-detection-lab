@@ -15,28 +15,40 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 # Project Structure
 ```
 ├── artifacts
-│   └── exif_sc.npy     <-- Store model weights here
+│   └── exif_sc.npy      <-- Store model weights here
 ├── assets
-├── configs             <-- Configuration files for scripts
-├── data                <-- To store downloaded data
+├── configs              <-- Configuration files for scripts
+├── data
+│   ├── downloaded       <-- To store downloaded data
+│   └── raw              <-- Dataset metadata
 ├── notebooks
 ├── requirements
 ├── src
-│   ├── attacks         <-- Implementation of adversarial attacks
-│   ├── datasets        <-- Data loading classes
-│   ├── evaluation      <-- Evaluation classes and utilities
-│   ├── models          <-- Implementation of detection models
+│   ├── attacks          <-- Implementation of adversarial attacks
+│   ├── datasets         <-- Data loading classes
+│   ├── evaluation       <-- Evaluation classes and utilities
+│   ├── models           <-- Implementation of detection models
 │   ├── structures.py
 │   └── utils.py
-├── evaluate.py         <-- Main entry point for evaluation
+├── evaluate.py          <-- Main entry point for evaluation
+├── non_adv_evaluate.py  <-- Main entry point for evaluation
 └── ...
 ```
 
 # Usage
+
+## Evaluation
 ```
-python evaluate.py --config configs/evaluate/config.yaml
+python non_adv_evaluate.py --config configs/evaluate/non_adv.yaml
 ```
-The above command runs the evaluation on a clean dataset, and also on the dataset after it has been adversarially perturbed, based on the settings specified in the configuration file.
+Runs the evaluation on a dataset, based on the settings specified in the configuration file.
+
+## Evaluation w/ Adversarial Attack
+```
+python evaluate.py --config configs/evaluate/adv.yaml
+```
+Runs the evaluation on a clean dataset, and also on the dataset after it has been adversarially perturbed, based on the settings specified in the configuration file.
+
 
 # Resources
 ### Model Conversion

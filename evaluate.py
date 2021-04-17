@@ -22,14 +22,14 @@ def main(config, args):
     evaluator = Evaluator(
         model,
         dataset,
-        config["adv_step_size"],
-        config["adv_n_iter"],
+        adv_step_size=config["adv_step_size"],
+        adv_n_iter=config["adv_n_iter"],
         vis_dir=args.vis_dir,
         logger=logger,
     )
 
     # Run evaluation
-    results = evaluator(config["save"], tuple(config["resize"]))
+    results = evaluator(tuple(config["resize"]))
 
     # Save results
     print(results)

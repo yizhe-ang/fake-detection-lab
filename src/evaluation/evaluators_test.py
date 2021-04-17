@@ -19,12 +19,33 @@ class Evaluator:
         self,
         model,
         dataset: Dataset,
-        adv_step_size: int,
-        adv_n_iter: int,
+        perform_adv: bool = False,
+        adv_step_size: int = None,
+        adv_n_iter: int = None,
         vis_dir: str = None,
-        vis_every=1,
+        vis_every: int = 1,
         logger=None,
     ) -> None:
+        """Performs evaluation given the model and datasets.
+        Performs adversarial perturbation on the dataset if specified.
+
+        Parameters
+        ----------
+        model :
+        dataset : Dataset
+        perform_adv : bool, optional
+            Whether to perform adversarial perturbation on dataset, by default False
+        adv_step_size : int, optional
+            "Learning rate" of adversarial attack, by default None
+        adv_n_iter : int, optional
+            Number of iterations of adversarial attack, by default None
+        vis_dir : str, optional
+            Directory to save visualizations, not saved if not specified, by default None
+        vis_every : int, optional
+            To save visualizations every `vis_every` images, by default 1
+        logger : , optional
+            Wandb logger to log results, by default None
+        """
         # Freeze all network weights
         for parameter in model.net.parameters():
             parameter.requires_grad = False
@@ -32,6 +53,8 @@ class Evaluator:
         self.model = model
 
         self.dataset = dataset
+
+        self.perform_adv = perform_adv
         self.adv_step_size = adv_step_size
         self.adv_n_iter = adv_n_iter
 
@@ -39,8 +62,10 @@ class Evaluator:
         self.vis_every = vis_every
         self.logger = logger
 
-        self.results = {"clean": {}, "adv": {}}
-        self.attacker = PatchLOTS()
+        self.results = {"clean": {}}
+        if self.perform_adv:
+            self.results["adv"] = {}
+            self.attacker = PatchLOTS()
 
     def __call__(self, resize: Tuple[int, int] = None) -> Dict[str, Any]:
         """
@@ -67,6 +92,9 @@ class Evaluator:
             auc : float
                 Area under the Receiving Operating Characteristic Curve, for localization
         """
+        # E.g. ["clean", "adv"]
+        metric_types = list(self.results.keys())
+
         # Initialize per-image metrics
         metrics = defaultdict(dict)
         metric_classes = {
@@ -75,12 +103,12 @@ class Evaluator:
             "mAP": mAP_Metric,
             "auc": AUC_Metric,
         }
-        for type in ["clean", "adv"]:
+        for type in metric_types:
             for name, cls in metric_classes.items():
                 metrics[type][name] = cls()
 
         # Cache all predictions
-        all_preds = {"clean": defaultdict(list), "adv": defaultdict(list)}
+        all_preds = {t: defaultdict(list) for t in metric_types}
 
         # Loop through dataset
         for i in tqdm(range(len(self.dataset))):
@@ -93,13 +121,14 @@ class Evaluator:
             # Perform prediction on clean image
             img_pred["clean"] = self.model.predict(clean_img)
 
-            # Generate adversarial image
-            adv_img = self.attacker(
-                self.model, data, self.adv_step_size, self.adv_n_iter
-            )
+            if self.perform_adv:
+                # Generate adversarial image
+                adv_img = self.attacker(
+                    self.model, data, self.adv_step_size, self.adv_n_iter
+                )
 
-            # Perform prediction on adversarial image
-            img_pred["adv"] = self.model.predict(adv_img)
+                # Perform prediction on adversarial image
+                img_pred["adv"] = self.model.predict(adv_img)
 
             # Account for NaN values
             for pred in img_pred.values():
@@ -117,7 +146,7 @@ class Evaluator:
                     m.update(data["map"], img_pred[type]["ms"])
 
             # Visualize some examples
-            if self.vis_dir and i % self.vis_every == 0:
+            if self.perform_adv and self.vis_dir and i % self.vis_every == 0:
                 self._vis_preds(i, data, img_pred, clean_img, adv_img)
 
             # If image sizes different, resize to a consistent shape
@@ -130,9 +159,12 @@ class Evaluator:
                     resize[::-1],
                     interpolation=cv2.INTER_LINEAR,
                 )
-                img_pred["adv"]["ms"] = cv2.resize(
-                    img_pred["adv"]["ms"], resize[::-1], interpolation=cv2.INTER_LINEAR
-                )
+                if self.perform_adv:
+                    img_pred["adv"]["ms"] = cv2.resize(
+                        img_pred["adv"]["ms"],
+                        resize[::-1],
+                        interpolation=cv2.INTER_LINEAR,
+                    )
 
             # Cache predictions
             for type, preds in all_preds.items():
@@ -143,7 +175,6 @@ class Evaluator:
                 # Store predictions
                 preds["y_score"].append(img_pred[type]["score"])
                 preds["score_map"].append(img_pred[type]["ms"])
-
 
         # Compute per-image evaluation metrics
         for type, ms in metrics.items():
