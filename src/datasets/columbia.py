@@ -3,17 +3,25 @@
 - https://www.ee.columbia.edu/ln/dvmm/downloads/authsplcuncmp/
 - Detecting Image Splicing Using Geometry Invariants And Camera Characteristics Consistency, Yu-Feng Hsu, Shih-Fu Chang
 """
+import tarfile
 from pathlib import Path
 from typing import Any, Dict
 
 import cv2
 import numpy as np
+import toml
 import torch
+from src.datasets.utils import download_raw_dataset
 from torch.utils.data import Dataset
+
+METADATA_FILENAME = Path("data/raw/columbia/metadata.toml")
+DL_DATA_DIRNAME = Path("data/downloaded/columbia")
+PROCESSED_DATA_DIRNAMES = [DL_DATA_DIRNAME / "4cam_auth", DL_DATA_DIRNAME / "4cam_splc"]
 
 
 class ColumbiaDataset(Dataset):
-    def __init__(self, root_dir="data/columbia", spliced_only=False) -> None:
+    def __init__(self, root_dir=DL_DATA_DIRNAME, spliced_only=False) -> None:
+        self._prepare_data()
 
         self.to_label = {"4cam_auth": 0, "4cam_splc": 1}
         root_dir = Path(root_dir)
@@ -39,6 +47,19 @@ class ColumbiaDataset(Dataset):
         ), "Incorrect expected number of spliced images in dataset!"
 
         self.img_paths.extend(splc_paths)
+
+    def _prepare_data(self) -> None:
+        if not all(p.exists() for p in PROCESSED_DATA_DIRNAMES):
+            metadata = toml.load(METADATA_FILENAME)
+            # Download dataset
+            download_raw_dataset(metadata, DL_DATA_DIRNAME)
+
+            # Process downloaded dataset
+            print("Unzipping Columbia...")
+            for filename in metadata["filename"]:
+                tar = tarfile.open(DL_DATA_DIRNAME / filename, "r:bz2")
+                tar.extractall(DL_DATA_DIRNAME)
+                tar.close()
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """

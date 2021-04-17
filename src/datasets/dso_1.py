@@ -3,17 +3,25 @@
 - https://recodbr.wordpress.com/code-n-data/#dso1_dsi1
 - T. J. d. Carvalho, C. Riess, E. Angelopoulou, H. Pedrini and A. d. R. Rocha, “Exposing Digital Image Forgeries by Illumination Color Classification,” in IEEE Transactions on Information Forensics and Security, vol. 8, no. 7, pp. 1182-1194, July 2013. doi: doi: 10.1109/TIFS.2013.2265677
 """
+import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
 import cv2
 import numpy as np
+import toml
 import torch
+from src.datasets.utils import download_raw_dataset
 from torch.utils.data import Dataset
+
+METADATA_FILENAME = Path("data/raw/dso_1/metadata.toml")
+DL_DATA_DIRNAME = Path("data/downloaded/dso_1")
+PROCESSED_DATA_DIRNAME = DL_DATA_DIRNAME / "tifs-database"
 
 
 class DSO_1_Dataset(Dataset):
-    def __init__(self, root_dir="data/tifs-database", spliced_only=False) -> None:
+    def __init__(self, root_dir=PROCESSED_DATA_DIRNAME, spliced_only=False) -> None:
+        self._prepare_data()
 
         self.to_label = {"normal": 0, "splicing": 1}
         self.root_dir = Path(root_dir)
@@ -32,6 +40,18 @@ class DSO_1_Dataset(Dataset):
         assert (
             len(self.img_paths) == dataset_len
         ), "Incorrect expected number of images in dataset!"
+
+    def _prepare_data(self) -> None:
+        if not PROCESSED_DATA_DIRNAME.exists():
+            metadata = toml.load(METADATA_FILENAME)
+            # Download dataset
+            download_raw_dataset(metadata, DL_DATA_DIRNAME)
+
+            # Process downloaded dataset
+            print("Unzipping DSO-1...")
+            zip = zipfile.ZipFile(DL_DATA_DIRNAME / metadata["filename"])
+            zip.extractall(DL_DATA_DIRNAME)
+            zip.close()
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """

@@ -4,17 +4,26 @@
 - P. Korus & J. Huang, Multi-scale Analysis Strategies in PRNU-based Tampering Localization, IEEE Trans. Information Forensics & Security, 2017
 - P. Korus & J. Huang, Evaluation of Random Field Models in Multi-modal Unsupervised Tampering Localization, Proc. of IEEE Int. Workshop on Inf. Forensics and Security, 2016
 """
+import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
 import cv2
 import numpy as np
+import toml
 import torch
+from src.datasets.utils import download_raw_dataset
 from torch.utils.data import Dataset
+
+METADATA_FILENAME = Path("data/raw/realistic_tampering/metadata.toml")
+DL_DATA_DIRNAME = Path("data/downloaded/realistic_tampering")
+PROCESSED_DATA_DIRNAME = DL_DATA_DIRNAME / "data-images"
 
 
 class RealisticTamperingDataset(Dataset):
-    def __init__(self, root_dir="data/realistic_tampering") -> None:
+    def __init__(self, root_dir=PROCESSED_DATA_DIRNAME) -> None:
+        self._prepare_data()
+
         self.to_label = {"pristine": 0, "tampered-realistic": 1}
         root_dir = Path(root_dir)
 
@@ -33,6 +42,18 @@ class RealisticTamperingDataset(Dataset):
         assert (
             len(self.img_paths) == 440
         ), "Incorrect expected number of images in dataset!"
+
+    def _prepare_data(self) -> None:
+        if not PROCESSED_DATA_DIRNAME.exists():
+            metadata = toml.load(METADATA_FILENAME)
+            # Download dataset
+            download_raw_dataset(metadata, DL_DATA_DIRNAME, gdrive=True)
+
+            # Process downloaded dataset
+            print("Unzipping Realistic Tampering...")
+            zip = zipfile.ZipFile(DL_DATA_DIRNAME / metadata["filename"])
+            zip.extractall(DL_DATA_DIRNAME)
+            zip.close()
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """

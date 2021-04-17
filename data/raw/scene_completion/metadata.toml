@@ -1,0 +1,3 @@
+filename = 'test_set.zip'
+sha256 = '5b219cf3262844ec6b89af021b2d86a615a94a0f0245800bd1540254e1180d76'
+url = 'http://graphics.cs.cmu.edu/projects/scene-completion/test_set.zip'

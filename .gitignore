@@ -1,6 +1,6 @@
 wandb/
 .vscode/
-data/
+data/downloaded/
 artifacts/
 
 # Byte-compiled / optimized / DLL files

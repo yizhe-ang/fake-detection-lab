@@ -3,17 +3,26 @@
 - https://minyoungg.github.io/selfconsistency/
 - M. Huh, A. Liu, A. Owens, A. A. Efros, Fighting Fake News: Image Splice Detection via Learned Self-Consistency In ECCV, 2018
 """
+import tarfile
 from pathlib import Path
 from typing import Any, Dict
 
 import cv2
 import numpy as np
+import toml
 import torch
+from src.datasets.utils import download_raw_dataset
 from torch.utils.data import Dataset
+
+METADATA_FILENAME = Path("data/raw/in_the_wild/metadata.toml")
+DL_DATA_DIRNAME = Path("data/downloaded/in_the_wild")
+PROCESSED_DATA_DIRNAME = DL_DATA_DIRNAME / "label_in_wild"
 
 
 class InTheWildDataset(Dataset):
-    def __init__(self, root_dir="data/in_the_wild") -> None:
+    def __init__(self, root_dir=PROCESSED_DATA_DIRNAME) -> None:
+        self._prepare_data()
+
         root_dir = Path(root_dir)
 
         # Get list of all image paths
@@ -24,6 +33,17 @@ class InTheWildDataset(Dataset):
             len(self.img_paths) == 201
         ), "Incorrect expected number of images in dataset!"
 
+    def _prepare_data(self) -> None:
+        if not PROCESSED_DATA_DIRNAME.exists():
+            metadata = toml.load(METADATA_FILENAME)
+            # Download dataset
+            download_raw_dataset(metadata, DL_DATA_DIRNAME)
+
+            # Process downloaded dataset
+            print("Unzipping In The Wild...")
+            tar = tarfile.open(DL_DATA_DIRNAME / metadata["filename"], "r:gz")
+            tar.extractall(DL_DATA_DIRNAME)
+            tar.close()
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """

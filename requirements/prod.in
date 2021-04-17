@@ -8,3 +8,5 @@ tqdm
 jupyter
 pyyaml
 wandb
+toml
+gdown

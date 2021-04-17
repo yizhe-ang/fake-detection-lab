@@ -1,0 +1,3 @@
+filename = ['4cam_auth.tar.bz2', '4cam_splc.tar.bz2']
+sha256 = ['561dcc477824817e23e8f4457e9139096f05139d8440725112c0281b7f9ebac3', 'b47411de8cd73283d0525f6e03e33d98adef6e7f73b27422ac5079837692679f']
+url = ['https://www.dropbox.com/sh/786qv3yhvc7s9ki/AABaQvI-lPiM3Zl64RQoDCiMa/4cam_auth.tar.bz2?dl=1', 'https://www.dropbox.com/sh/786qv3yhvc7s9ki/AAAESATxO7wncDMKkl1XjyNaa/4cam_splc.tar.bz2?dl=1']

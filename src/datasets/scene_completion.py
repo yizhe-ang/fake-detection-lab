@@ -3,17 +3,26 @@
 - http://graphics.cs.cmu.edu/projects/scene-completion/
 - James Hays, Alexei A. Efros. Scene Completion Using Millions of Photographs. ACM Transactions on Graphics (SIGGRAPH 2007). August 2007, vol. 26, No. 3.
 """
+import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
 import cv2
+import toml
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from src.datasets.utils import download_raw_dataset
+
+METADATA_FILENAME = Path("data/raw/scene_completion/metadata.toml")
+DL_DATA_DIRNAME = Path("data/downloaded/scene_completion")
+PROCESSED_DATA_DIRNAME = DL_DATA_DIRNAME / "processed"
 
 
 class SceneCompletionDataset(Dataset):
-    def __init__(self, root_dir="data/scene_completion") -> None:
+    def __init__(self, root_dir=PROCESSED_DATA_DIRNAME) -> None:
+        self._prepare_data()
+
         # Get list of all image names
         img_dir = Path(root_dir)
         self.img_paths = [p for p in img_dir.iterdir() if p.stem[-4:] != "mask"]
@@ -21,6 +30,19 @@ class SceneCompletionDataset(Dataset):
         assert (
             len(self.img_paths) == 51
         ), "Incorrect expected number of images in dataset!"
+
+    def _prepare_data(self) -> None:
+        if not PROCESSED_DATA_DIRNAME.exists():
+            metadata = toml.load(METADATA_FILENAME)
+            # Download dataset
+            download_raw_dataset(metadata, DL_DATA_DIRNAME)
+
+            # Process downloaded dataset
+            print("Unzipping Scene Completion...")
+            zip = zipfile.ZipFile(DL_DATA_DIRNAME / metadata["filename"])
+            PROCESSED_DATA_DIRNAME.mkdir(parents=True, exist_ok=True)
+            zip.extractall(PROCESSED_DATA_DIRNAME)
+            zip.close()
 
     def __getitem__(self, idx) -> Dict[str, Any]:
         """
