@@ -20,6 +20,7 @@ class PatchLOTS:
         n_iter=50,
         feat_batch_size=32,
         pred_batch_size=1024,
+        method="mean",
     ) -> torch.Tensor:
         # Make a copy cos will be modifying it
         img = data["img"].detach().clone()
@@ -30,17 +31,43 @@ class PatchLOTS:
         # clean_preds = model.predict(img)
 
         print("Performing adversarial attack...")
+
         img = model.init_img(img)
+        n_patches = img.max_h_idx * img.max_w_idx
+
+        # Get patch features, [N, D]
         patch_feats = model.get_patch_feats(img, batch_size=feat_batch_size)
 
         # Identify all authentic patches
         # Find patches with no overlap with spliced regions
-        # Get mean feature representation, t, of all authentic patches
-        target_feat = self._compute_target_feat(
+        auth_feats, is_auth = self._get_auth_feats(
             img, gt_map, patch_feats, feat_batch_size
         )
+        if len(auth_feats) == 0:
+            return img.data.detach().clone().round().byte().cpu()
 
-        # Make all the patches close to t
+        # Determine target features
+        if method == "mean":
+            # Get mean feature representation, t, of all authentic patches
+            # [N, D]
+            target_feats = auth_feats.mean(dim=0, keepdim=True).expand(n_patches, -1)
+        elif method == "sample":
+            # Instead of fixing a target feature
+            # Model feature distribution of authentic regions
+            # Make features of spliced region close to that distribution
+            # Simply perform sampling?
+
+            target_feats = patch_feats
+            n_auths = len(auth_feats)
+            n_not_auths = len(target_feats) - n_auths
+
+            # Sample auth features
+            sample_idx = torch.randint(n_auths, size=(n_not_auths,))
+
+            # Replace not-auth regions with samples from auth regions
+            target_feats[~is_auth] = auth_feats[sample_idx]
+
+        # Make all the patches close to target features
         # Compute perturbation for each patch
 
         # Cache the best perturbed image thus far
@@ -53,15 +80,18 @@ class PatchLOTS:
 
             total_loss = 0
 
-            # Have to split patches into batches
-            for patches in img.patches_gen(feat_batch_size):
+            # Have to split patches into batches (to fit in GPU memory)
+            for i, patches in enumerate(img.patches_gen(feat_batch_size)):
                 patch_feats = model.net(patches)
                 # If missing batch dimension
                 if len(patch_feats.shape) == 1:
                     patch_feats = patch_feats.view(1, -1)
 
                 # Compute distance from target feature
-                adv_loss_per_patch = ((target_feat - patch_feats) ** 2).sum(-1) / 2
+                curr_target_feats = target_feats[
+                    i * feat_batch_size : (i + 1) * feat_batch_size
+                ]
+                adv_loss_per_patch = ((curr_target_feats - patch_feats) ** 2).sum(-1) / 2
                 adv_loss = adv_loss_per_patch.sum()
 
                 # FIXME How to combine gradients from overlapping patches?
@@ -101,13 +131,14 @@ class PatchLOTS:
         # return clean_preds, adv_preds, adv_img
         return adv_img
 
-    def _compute_target_feat(
+    def _get_auth_feats(
         self,
         img: PatchedImage,
         gt_map: np.ndarray,
         patch_feats: torch.Tensor,
         batch_size=32,
     ) -> torch.Tensor:
+
         gt_map = torch.BoolTensor(gt_map)
         # Keep track of which patches are authentic
         is_auth = torch.zeros(img.max_h_idx * img.max_w_idx, dtype=torch.bool)
@@ -123,4 +154,5 @@ class PatchLOTS:
 
         auth_feats = patch_feats[is_auth]
 
-        return auth_feats.mean(dim=0)
+        # [N_auth, D], [N,]
+        return auth_feats, is_auth

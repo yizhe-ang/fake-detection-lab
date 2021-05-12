@@ -24,6 +24,7 @@ class Evaluator:
         vis_dir: str = None,
         vis_every=1,
         logger=None,
+        method="mean",
     ) -> None:
         # Freeze all network weights
         for parameter in model.net.parameters():
@@ -34,6 +35,7 @@ class Evaluator:
         self.dataset = dataset
         self.adv_step_size = adv_step_size
         self.adv_n_iter = adv_n_iter
+        self.method = method
 
         self.vis_dir = vis_dir
         self.vis_every = vis_every
@@ -95,7 +97,11 @@ class Evaluator:
 
             # Generate adversarial image
             adv_img = self.attacker(
-                self.model, data, self.adv_step_size, self.adv_n_iter
+                self.model,
+                data,
+                self.adv_step_size,
+                self.adv_n_iter,
+                method=self.method,
             )
 
             # Perform prediction on adversarial image
@@ -143,7 +149,6 @@ class Evaluator:
                 # Store predictions
                 preds["y_score"].append(img_pred[type]["score"])
                 preds["score_map"].append(img_pred[type]["ms"])
-
 
         # Compute per-image evaluation metrics
         for type, ms in metrics.items():

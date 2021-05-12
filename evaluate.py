@@ -26,6 +26,7 @@ def main(config, args):
         adv_n_iter=config["adv_n_iter"],
         vis_dir=args.vis_dir,
         logger=logger,
+        method=config["method"],
     )
 
     # Run evaluation

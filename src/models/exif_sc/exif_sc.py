@@ -213,7 +213,8 @@ class EXIF_SC:
     def get_patch_feats(
         self, img: PatchedImage, batch_size=32
     ) -> torch.Tensor:
-        """Get features for every patch in the image
+        """Get features for every patch in the image.
+        Features used to compute if two patches share the same EXIF attributes.
 
         Parameters
         ----------
@@ -223,7 +224,7 @@ class EXIF_SC:
         Returns
         -------
         torch.Tensor
-            [n_patches, n_features]
+            [n_patches, 4096]
         """
         # Compute feature vector for each image patch
         patch_features = []

@@ -1,4 +1,4 @@
-name: dso1  # Name of experiment
+name: dso1_sample_0  # Name of experiment
 
 model: models.EXIF_SC
 model_args:
@@ -6,6 +6,7 @@ model_args:
   device: cuda:1
 
 dataset: datasets.DSO_1_Dataset
+# dataset: datasets.ColumbiaDataset
 dataset_args:
   spliced_only: True
 
@@ -17,3 +18,4 @@ resize: [1600, 1900]  # For DSO-1
 # Adversarial attack arguments
 adv_step_size: 10000
 adv_n_iter: 50
+method: sample
