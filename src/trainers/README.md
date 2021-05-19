@@ -8,10 +8,10 @@ The sampling process for a training batch is as follows:
 
 1. We'll select a specific EXIF attribute value. To do this, we'll first randomly sample an EXIF attribute, and then randomly sample a value from it.
 2. The first half of the batch will be consistent, i.e. pairs will both have that specific attribute value. We randomly sample from the set of images with that attribute value.
-3. The second half of the batch will be inconsistent, i.e. the first image will that specific value, but the second image to be compared to will have a different value. We sample from the rest of the images to form those second images.
+3. The second half of the batch will be inconsistent, i.e. the first image will have that specific value, but the second image to be compared with will have a different value. We sample from the rest of the images to form those second images.
 
 ## Second Stage
-The second stage attaches another MLP on top of the EXIF attribute predictions in order to train it to predict whether the image patches come from the same image (binary classification).
+The second stage attaches another MLP on top of the EXIF attribute predictions and trains it to predict whether an image pair comes from the same image or not(binary classification).
 
 The rest of the network weights are frozen, and only this MLP is trained.
 
