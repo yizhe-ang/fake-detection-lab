@@ -1,3 +1,5 @@
+checkpoints/
+test/
 NOTES.md
 wandb/
 .vscode/

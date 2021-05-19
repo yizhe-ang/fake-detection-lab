@@ -1,0 +1,14 @@
+name: train_0
+
+n_epochs_1: 1
+n_epochs_2: 1
+
+learning_rate_1: 0.0003
+learning_rate_2: 0.0003
+
+datamodule: datasets.MIRFLICKR_25kDataModule
+datamodule_args:
+  n_exif_attr: 80
+  patch_size: 128
+  batch_size: 128
+  iters_per_epoch: 500

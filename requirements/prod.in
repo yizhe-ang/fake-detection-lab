@@ -10,3 +10,6 @@ pyyaml
 wandb
 toml
 gdown
+pandas
+pytorch-lightning
+torchmetrics

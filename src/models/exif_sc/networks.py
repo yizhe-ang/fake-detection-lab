@@ -16,8 +16,8 @@ import torch.nn.functional as F
 _weights_dict = dict()
 
 
-def load_weights(weight_file):
-    if weight_file == None:
+def load_weights(weight_file, weight_ext):
+    if weight_ext != "npy":
         return
 
     try:
@@ -25,17 +25,23 @@ def load_weights(weight_file):
     except:
         weights_dict = np.load(weight_file, allow_pickle=True, encoding="bytes").item()
 
+    print("Loaded numpy weights.")
+
     return weights_dict
 
 
 class EXIF_Net(nn.Module):
-    def __init__(self, weight_file: str):
+    def __init__(self, weight_file: str = None, n_attrs: int = 83):
         super().__init__()
+
+        # Get format of weights
+        weight_ext = None if weight_file is None else weight_file.split(".")[-1]
+
+        # Load numpy weights
         global _weights_dict
-        _weights_dict = load_weights(weight_file)
+        _weights_dict = load_weights(weight_file, weight_ext)
 
         # EXIF prediction network
-        # FIXME Double-check configuration of non-linearities
         self.exif_fc = nn.Sequential(
             nn.Linear(8192, 4096),
             nn.ReLU(),
@@ -43,7 +49,7 @@ class EXIF_Net(nn.Module):
             nn.ReLU(),
             nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Linear(1024, 83),
+            nn.Linear(1024, n_attrs),
         )
         self.__set_fc_params(self.exif_fc[0], "predict/fc/fc_1")
         self.__set_fc_params(self.exif_fc[2], "predict/fc/fc_2")
@@ -52,13 +58,26 @@ class EXIF_Net(nn.Module):
 
         # Classification network
         self.classifier_fc = nn.Sequential(
-            nn.Linear(83, 512), nn.ReLU(), nn.Linear(512, 1)
+            nn.Linear(n_attrs, 512), nn.ReLU(), nn.Linear(512, 1)
         )
         self.__set_fc_params(self.classifier_fc[0], "classify/fc/fc_1")
         self.__set_fc_params(self.classifier_fc[2], "classify/fc_out")
 
         # ResNet backbone
         self._init_backbone()
+
+        # HACK Load torch ckpt weights
+        if weight_ext == "ckpt":
+            ckpt = torch.load(weight_file)
+
+            # Rename parameter keys
+            new_state_dict = {}
+            for name, params in ckpt["state_dict"].items():
+                new_state_dict[name[4:]] = params
+
+            self.load_state_dict(new_state_dict)
+
+            print("Loaded torch checkpoint.")
 
     @staticmethod
     def preprocess_img(img: torch.Tensor) -> torch.Tensor:
@@ -1853,12 +1872,13 @@ class EXIF_Net(nn.Module):
 
     @staticmethod
     def __set_fc_params(module, name):
-        module.state_dict()["weight"].copy_(
-            torch.from_numpy(_weights_dict[name]["weights"])
-        )
-        module.state_dict()["bias"].copy_(
-            torch.from_numpy(_weights_dict[name]["biases"])
-        )
+        if _weights_dict:
+            module.state_dict()["weight"].copy_(
+                torch.from_numpy(_weights_dict[name]["weights"])
+            )
+            module.state_dict()["bias"].copy_(
+                torch.from_numpy(_weights_dict[name]["biases"])
+            )
 
     @staticmethod
     def __conv(dim, name, **kwargs):
@@ -1871,13 +1891,14 @@ class EXIF_Net(nn.Module):
         else:
             raise NotImplementedError()
 
-        layer.state_dict()["weight"].copy_(
-            torch.from_numpy(_weights_dict[name]["weights"])
-        )
-        if "biases" in _weights_dict[name]:
-            layer.state_dict()["bias"].copy_(
-                torch.from_numpy(_weights_dict[name]["biases"])
+        if _weights_dict:
+            layer.state_dict()["weight"].copy_(
+                torch.from_numpy(_weights_dict[name]["weights"])
             )
+            if "biases" in _weights_dict[name]:
+                layer.state_dict()["bias"].copy_(
+                    torch.from_numpy(_weights_dict[name]["biases"])
+                )
         return layer
 
     @staticmethod
@@ -1891,26 +1912,31 @@ class EXIF_Net(nn.Module):
         else:
             raise NotImplementedError()
 
-        if "gamma" in _weights_dict[name]:
-            layer.state_dict()["weight"].copy_(
-                torch.from_numpy(_weights_dict[name]["gamma"])
+        if _weights_dict:
+            if "gamma" in _weights_dict[name]:
+                layer.state_dict()["weight"].copy_(
+                    torch.from_numpy(_weights_dict[name]["gamma"])
+                )
+            else:
+                layer.weight.data.fill_(1)
+
+            if "beta" in _weights_dict[name]:
+                layer.state_dict()["bias"].copy_(
+                    torch.from_numpy(_weights_dict[name]["beta"])
+                )
+            else:
+                layer.bias.data.fill_(0)
+
+            layer.state_dict()["running_mean"].copy_(
+                torch.from_numpy(_weights_dict[name]["moving_mean"])
+            )
+            layer.state_dict()["running_var"].copy_(
+                torch.from_numpy(_weights_dict[name]["moving_variance"])
             )
         else:
             layer.weight.data.fill_(1)
-
-        if "beta" in _weights_dict[name]:
-            layer.state_dict()["bias"].copy_(
-                torch.from_numpy(_weights_dict[name]["beta"])
-            )
-        else:
             layer.bias.data.fill_(0)
 
-        layer.state_dict()["running_mean"].copy_(
-            torch.from_numpy(_weights_dict[name]["moving_mean"])
-        )
-        layer.state_dict()["running_var"].copy_(
-            torch.from_numpy(_weights_dict[name]["moving_variance"])
-        )
         return layer
 
 

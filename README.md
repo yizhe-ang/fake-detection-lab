@@ -28,27 +28,48 @@ All model artifacts can be accessed and downloaded [here](https://drive.google.c
 │   ├── datasets         <-- Data loading classes
 │   ├── evaluation       <-- Evaluation classes and utilities
 │   ├── models           <-- Implementation of detection models
+│   ├── trainers         <-- Classes for model training
 │   ├── structures.py
 │   └── utils.py
 ├── evaluate.py          <-- Main entry point for evaluation
 ├── non_adv_evaluate.py  <-- Main entry point for evaluation
+├── train.py             <-- Main entry point for training
 └── ...
 ```
 
 # Usage
 
-## Evaluation
+## Training
 ```
-python non_adv_evaluate.py --config configs/evaluate/non_adv.yaml
+python train.py \
+    --config configs/train/exif_sc.yaml \
+    --checkpoints_dir checkpoints \
+    --gpu 0
+```
+Runs training on a dataset, based on the settings specified in the configuration file. Weights are saved as a torch `.ckpt` file in the specified directory.
+
+More [info](src/trainers/README.md).
+
+## Evaluation
+More info [here](src/models/exif_sc/README.md) and [here](src/attacks/README.md)
+### Without Adversarial Attack
+```
+python non_adv_evaluate.py \
+    --config configs/evaluate/non_adv.yaml \
+    --weights_path path/to/weights.{npy, ckpt}
 ```
 Runs the evaluation on a dataset, based on the settings specified in the configuration file.
 
-## Evaluation w/ Adversarial Attack
+### With Adversarial Attack
 ```
-python evaluate.py --config configs/evaluate/adv.yaml
+python evaluate.py \
+    --config configs/evaluate/adv.yaml \
+    --weights_path path/to/weights.{npy, ckpt}
 ```
 Runs the evaluation on a clean dataset, and also on the dataset after it has been adversarially perturbed, based on the settings specified in the configuration file.
 
+# Datasets
+All metadata for the datasets used can be found [here](data/raw).
 
 # Resources
 ### Model Conversion
@@ -63,10 +84,3 @@ Runs the evaluation on a clean dataset, and also on the dataset after it has bee
 
 ### Adversarial Machine Learning
 - Adversarial Attack on Deep Learning-Based Splice Localization ([Rozsa et al., 2020](https://arxiv.org/abs/2004.08443))
-
-# Datasets
-- [Columbia Image Splicing Detection Evaluation Dataset](https://www.ee.columbia.edu/ln/dvmm/downloads/authsplcuncmp/)
-- [Realistic Tampering Dataset](http://pkorus.pl/downloads/dataset-realistic-tampering)
-- [In-the-Wild Dataset](https://minyoungg.github.io/selfconsistency/)
-- [Scene Completion Using Millions of Photographs - Dataset](http://graphics.cs.cmu.edu/projects/scene-completion/)
-- [DSO-1 Dataset](https://recodbr.wordpress.com/code-n-data/#dso1_dsi1)

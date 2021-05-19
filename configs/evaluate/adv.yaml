@@ -2,7 +2,6 @@ name: dso1_sample_0  # Name of experiment
 
 model: models.EXIF_SC
 model_args:
-  weight_file: artifacts/exif_sc.npy
   device: cuda:1
 
 dataset: datasets.DSO_1_Dataset

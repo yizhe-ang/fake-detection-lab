@@ -8,7 +8,7 @@ from src.utils import ConfigManager, load_yaml
 def main(config, args):
     config_manager = ConfigManager(config)
 
-    model = config_manager.init_object("model")
+    model = config_manager.init_object("model", weight_file=args.weights_path)
     dataset = config_manager.init_object("dataset")
 
     # Run evaluation
@@ -27,6 +27,11 @@ if __name__ == "__main__":
         "--config",
         help="path to the config file",
         default="configs/evaluate/config.yaml",
+    )
+    parser.add_argument(
+        "--weights_path",
+        help="path to the weights / checkpoint to load",
+        default="artifacts/exif_sc.npy",
     )
     parser.add_argument(
         "--results_path",

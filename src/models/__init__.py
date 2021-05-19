@@ -1,1 +1,1 @@
-from .exif_sc import EXIF_SC
+from .exif_sc import EXIF_SC, EXIF_Net
