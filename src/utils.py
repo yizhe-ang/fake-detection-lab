@@ -64,7 +64,7 @@ class ConfigManager:
     def __init__(self, config: Dict):
         self.config = config
 
-    def init_object(self, name: str, *args, **kwargs) -> object:
+    def init_object(self, name: str, has_args=True, *args, **kwargs) -> object:
         # Root module
         root = "src"
 
@@ -76,7 +76,10 @@ class ConfigManager:
 
         module = import_module(f"{root}.{module_name}")
 
-        object_args = self.config[f"{name}_args"] or {}
+        if has_args:
+            object_args = self.config[f"{name}_args"] or {}
+        else:
+            object_args = {}
         kwargs = {**kwargs, **object_args}
 
         return getattr(module, object_name)(*args, **kwargs)

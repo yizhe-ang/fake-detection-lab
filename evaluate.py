@@ -18,15 +18,14 @@ def main(config, args):
 
     model = config_manager.init_object("model", weight_file=args.weights_path)
     dataset = config_manager.init_object("dataset")
+    attacker = config_manager.init_object("attacker")
 
     evaluator = Evaluator(
         model,
         dataset,
-        adv_step_size=config["adv_step_size"],
-        adv_n_iter=config["adv_n_iter"],
+        attacker,
         vis_dir=args.vis_dir,
         logger=logger,
-        method=config["method"],
     )
 
     # Run evaluation

@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import torch
 from sklearn.metrics import average_precision_score
-from src.attacks import PatchLOTS
 from torch.utils.data import Dataset
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -19,8 +18,7 @@ class Evaluator:
         self,
         model,
         dataset: Dataset,
-        adv_step_size: int,
-        adv_n_iter: int,
+        attacker,
         vis_dir: str = None,
         vis_every=1,
         logger=None,
@@ -33,8 +31,6 @@ class Evaluator:
         self.model = model
 
         self.dataset = dataset
-        self.adv_step_size = adv_step_size
-        self.adv_n_iter = adv_n_iter
         self.method = method
 
         self.vis_dir = vis_dir
@@ -42,7 +38,8 @@ class Evaluator:
         self.logger = logger
 
         self.results = {"clean": {}, "adv": {}}
-        self.attacker = PatchLOTS()
+
+        self.attacker = attacker
 
     def __call__(self, resize: Tuple[int, int] = None) -> Dict[str, Any]:
         """
@@ -96,13 +93,7 @@ class Evaluator:
             img_pred["clean"] = self.model.predict(clean_img)
 
             # Generate adversarial image
-            adv_img = self.attacker(
-                self.model,
-                data,
-                self.adv_step_size,
-                self.adv_n_iter,
-                method=self.method,
-            )
+            adv_img = self.attacker(self.model, data)
 
             # Perform prediction on adversarial image
             img_pred["adv"] = self.model.predict(adv_img)

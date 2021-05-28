@@ -78,6 +78,7 @@ All metadata for the datasets used can be found [here](data/raw).
 
 ### Survey Papers
 - Media Forensics and DeepFakes: an overview ([Luisa Verdoliva, 2020](https://arxiv.org/abs/2001.06564))
+- A Survey of Machine Learning Techniques in Adversarial Image Forensics ([Nowroozia et al., 2020](https://arxiv.org/abs/2010.09680))
 
 ### Fake Detectors
 - Fighting Fake News: Image Splice Detection via Learned Self-Consistency ([Huh et al., ECCV 2018](https://minyoungg.github.io/selfconsistency/))

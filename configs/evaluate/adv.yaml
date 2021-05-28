@@ -1,20 +1,26 @@
-name: dso1_sample_0  # Name of experiment
+name: columbia_jpeg_0  # Name of experiment
 
 model: models.EXIF_SC
 model_args:
   device: cuda:1
 
-dataset: datasets.DSO_1_Dataset
-# dataset: datasets.ColumbiaDataset
+# dataset: datasets.DSO_1_Dataset
+dataset: datasets.ColumbiaDataset
 dataset_args:
   spliced_only: True
 
-# resize: [768, 1152]  # For Columbia
+resize: [768, 1152]  # For Columbia
 # resize: [600, 700]  # For Hays
 # resize: [1000, 1400]  # For In-The-Wild
-resize: [1600, 1900]  # For DSO-1
+# resize: [1600, 1900]  # For DSO-1
 
 # Adversarial attack arguments
-adv_step_size: 10000
-adv_n_iter: 50
-method: sample
+# attack: attacks.PatchLOTS
+# attack_args:
+#   adv_step_size: 10000
+#   adv_n_iter: 50
+#   method: sample
+
+attacker: attacks.JPEG_Compressor
+attacker_args:
+  quality: 30

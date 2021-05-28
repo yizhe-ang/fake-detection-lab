@@ -1938,37 +1938,3 @@ class EXIF_Net(nn.Module):
             layer.bias.data.fill_(0)
 
         return layer
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--weights_path",
-        help="path to the weights file",
-        default="artifacts/exif_sc.npy",
-    )
-    args = parser.parse_args()
-
-    net = EXIF_Net(args.weights_path)
-    net.eval()
-
-    batch_size = 5
-    image_size = (3, 32, 32)
-
-    # Get image features
-    output = net(torch.randn(batch_size, *image_size))
-    assert output.shape == torch.Size([batch_size, 4096])
-
-    # Get EXIF attribute predictions
-    output = net.predict_exif(
-        torch.randn(batch_size, *image_size), torch.randn(batch_size, *image_size)
-    )
-    assert output.shape == torch.Size([batch_size, 83])
-
-    # Get predictions
-    output = net.predict(
-        torch.randn(batch_size, *image_size), torch.randn(batch_size, *image_size)
-    )
-    assert output.shape == torch.Size([batch_size, 1])

@@ -12,16 +12,48 @@ from tqdm import tqdm
 
 
 class PatchLOTS:
+    def __init__(
+        self,
+        step_size=5,
+        n_iter=50,
+        feat_batch_size=32,
+        # pred_batch_size=1024,
+        method="mean",  # One of {'mean', 'sample'}
+    ) -> None:
+        """
+        Parameters
+        ----------
+        step_size : int, optional
+            Step size of gradient update, by default 5
+        n_iter : int, optional
+            Number of gradient updates, by default 50
+        feat_batch_size : int, optional
+            , by default 32
+        method : str, optional
+            One of {'mean', 'sample'}, by default "mean"
+        """
+        self.step_size = step_size
+        self.n_iter = n_iter
+        self.feat_batch_size = feat_batch_size
+        self.method = method
+
     def __call__(
         self,
         model,
         data: Dict[str, Any],
-        step_size=5,
-        n_iter=50,
-        feat_batch_size=32,
-        pred_batch_size=1024,
-        method="mean",
-    ) -> torch.Tensor:
+    ) -> torch.ByteTensor:
+        """
+        Parameters
+        ----------
+        model : [type]
+        data : Dict[str, Any]
+            From dataloader
+
+        Returns
+        -------
+        torch.ByteTensor
+            [C, H, W], the adversarially perturbed image
+        """
         # Make a copy cos will be modifying it
         img = data["img"].detach().clone()
         gt_map = data["map"]
@@ -36,22 +68,22 @@ class PatchLOTS:
         n_patches = img.max_h_idx * img.max_w_idx
 
         # Get patch features, [N, D]
-        patch_feats = model.get_patch_feats(img, batch_size=feat_batch_size)
+        patch_feats = model.get_patch_feats(img, batch_size=self.feat_batch_size)
 
         # Identify all authentic patches
         # Find patches with no overlap with spliced regions
         auth_feats, is_auth = self._get_auth_feats(
-            img, gt_map, patch_feats, feat_batch_size
+            img, gt_map, patch_feats, self.feat_batch_size
         )
         if len(auth_feats) == 0:
             return img.data.detach().clone().round().byte().cpu()
 
         # Determine target features
-        if method == "mean":
+        if self.method == "mean":
             # Get mean feature representation, t, of all authentic patches
             # [N, D]
             target_feats = auth_feats.mean(dim=0, keepdim=True).expand(n_patches, -1)
-        elif method == "sample":
+        elif self.method == "sample":
             # Instead of fixing a target feature
             # Model feature distribution of authentic regions
             # Make features of spliced region close to that distribution
@@ -74,14 +106,14 @@ class PatchLOTS:
         best_img = img.data.detach().clone()
         best_loss = float("inf")
 
-        for _ in tqdm(range(n_iter)):
+        for _ in tqdm(range(self.n_iter)):
             # FIXME Normalize image instead? Then step size will be smaller
             img.data.requires_grad = True
 
             total_loss = 0
 
             # Have to split patches into batches (to fit in GPU memory)
-            for i, patches in enumerate(img.patches_gen(feat_batch_size)):
+            for i, patches in enumerate(img.patches_gen(self.feat_batch_size)):
                 patch_feats = model.net(patches)
                 # If missing batch dimension
                 if len(patch_feats.shape) == 1:
@@ -89,9 +121,11 @@ class PatchLOTS:
 
                 # Compute distance from target feature
                 curr_target_feats = target_feats[
-                    i * feat_batch_size : (i + 1) * feat_batch_size
+                    i * self.feat_batch_size : (i + 1) * self.feat_batch_size
                 ]
-                adv_loss_per_patch = ((curr_target_feats - patch_feats) ** 2).sum(-1) / 2
+                adv_loss_per_patch = ((curr_target_feats - patch_feats) ** 2).sum(
+                    -1
+                ) / 2
                 adv_loss = adv_loss_per_patch.sum()
 
                 # FIXME How to combine gradients from overlapping patches?
@@ -104,7 +138,7 @@ class PatchLOTS:
             img_grad = img.data.grad.detach()
             with torch.no_grad():
                 grad_norm = torch.linalg.norm(img.data.flatten(), ord=float("inf"))
-                img.data = img.data - step_size * (img_grad / grad_norm)
+                img.data = img.data - self.step_size * (img_grad / grad_norm)
 
                 # Clip pixels
                 img.data = img.data.clamp(0, 255)
