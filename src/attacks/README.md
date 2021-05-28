@@ -24,27 +24,13 @@ A step size of 10000 was used, with 50 iterations.
 # Qualitative Results
 
 ## Columbia Dataset
-**AdvMean**
-![](/assets/lots_examples/columbia_mean_1.png)
 
-**AdvSample**
-![](/assets/lots_examples/columbia_sample_1.png)
+![](/assets/lots_examples/columbia_1.png)
 
-**AdvMean**
-![](/assets/lots_examples/columbia_mean_2.png)
-
-**AdvSample**
-![](/assets/lots_examples/columbia_sample_2.png)
+![](/assets/lots_examples/columbia_2.png)
 
 ## DSO-1 Dataset
-**AdvMean**
-![](/assets/lots_examples/dso1_mean_1.png)
 
-**AdvSample**
-![](/assets/lots_examples/dso1_sample_1.png)
+![](/assets/lots_examples/dso_1.png)
 
-**AdvMean**
-![](/assets/lots_examples/dso1_mean_2.png)
-
-**AdvSample**
-![](/assets/lots_examples/dso1_sample_2.png)
+![](/assets/lots_examples/dso_2.png)

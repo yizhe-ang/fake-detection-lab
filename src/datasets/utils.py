@@ -59,7 +59,7 @@ def check_and_download_url(
     sha256_check = compute_sha256(filename)
     if sha256_check != sha256:
         raise ValueError(
-            "Downloaded data file SHA-256 does not match that listed in metadata document."
+            f"Downloaded data file SHA-256 ({sha256_check}) does not match that listed in metadata document."
         )
 
 
