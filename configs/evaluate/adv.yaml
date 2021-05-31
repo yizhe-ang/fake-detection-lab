@@ -15,8 +15,8 @@ resize: [768, 1152]  # For Columbia
 # resize: [1600, 1900]  # For DSO-1
 
 # Adversarial attack arguments
-# attack: attacks.PatchLOTS
-# attack_args:
+# attacker: attacks.PatchLOTS
+# attacker_args:
 #   adv_step_size: 10000
 #   adv_n_iter: 50
 #   method: sample

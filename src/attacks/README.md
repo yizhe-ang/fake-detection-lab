@@ -6,6 +6,7 @@ Only the spliced images in the datasets were used for evaluation. For the MCC me
 Types of attack:
 - **AdvMean**: sets all target features to be the mean feature of all authentic patches.
 - **AdvSample**: samples uniformly from the set of features of authentic patches to be the target features for non-authentic patches.
+- **JPEG**: JPEG Compression.
 
 A step size of 10000 was used, with 50 iterations.
 

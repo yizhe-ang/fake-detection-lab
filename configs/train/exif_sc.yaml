@@ -1,4 +1,4 @@
-name: train_0
+name: train_0  # Name of experiment
 
 n_epochs_1: 1
 n_epochs_2: 1
