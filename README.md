@@ -1,6 +1,8 @@
 # fake-detection-lab
 Media Forensics / Fake Image Detection experiments in PyTorch.
 
+Project report can be found [here](report.pdf).
+
 # Installation
 We use `conda` for managing Python and CUDA versions, and `pip-tools` for managing Python package dependencies.
 1. Specify the appropriate `cudatoolkit` and `cudnn` versions to install on your machine in the `environment.yml` file.
